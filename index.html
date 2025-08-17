@@ -2819,7 +2819,8 @@ function parseTtDoses(details) {
         tanggal_t3: "", status_t3: "",
         tanggal_t4: "", status_t4: "",
         tanggal_t5: "", status_t5: "",
-        tanggal_tl: "", status_tl: ""
+        tanggal_tl: "", status_tl: "",
+        tanggalTTterakhir: ""  // 🔑 kolom baru
     };
 
     if (!details) return result;
@@ -2835,18 +2836,25 @@ function parseTtDoses(details) {
     arr.forEach((dose, index) => {
         let key = (index < 5) ? `t${index + 1}` : `tl`;
 
-        // format tanggal → dd-mm-yyyy (ID locale)
         let formattedDate = "";
         if (dose.date) {
             const d = new Date(dose.date);
             if (!isNaN(d)) {
-                formattedDate = d.toLocaleDateString("id-ID"); // contoh: 18/06/2025
+                formattedDate = d.toLocaleDateString("id-ID"); 
             }
         }
 
         result[`tanggal_${key}`] = formattedDate;
         result[`status_${key}`] = dose.source || "";
     });
+
+    // 🔑 ambil tanggal terakhir
+    if (arr.length > 0 && arr[arr.length - 1].date) {
+        const d = new Date(arr[arr.length - 1].date);
+        if (!isNaN(d)) {
+            result.tanggalTTterakhir = d.toLocaleDateString("id-ID");
+        }
+    }
 
     return result;
 }
@@ -2886,7 +2894,7 @@ window.downloadIndividualReportCsv = async function() {
         // 🔑 header CSV baru
         const headers = [
             'uniqueId', 'nik', 'nama', 'desaKelurahan', 'alamat', 'noHp', 'tanggalLahir', 'umur',
-            'tanggalLayanan', 'statusTt', 'jadwalDosisBerikutnya',
+            'tanggalLayanan', 'tanggalTTterakhir', 'statusTt', 'jadwalDosisBerikutnya',
             'tanggal_t1', 'status_t1',
             'tanggal_t2', 'status_t2',
             'tanggal_t3', 'status_t3',
