@@ -2811,6 +2811,47 @@ window.prefixExcelText = function(fieldName, value) {
     return "'" + normalized;
 };
 
+// 🔑 helper untuk parsing ttDosesDetails JSON
+function parseTtDoses(details) {
+    const result = {
+        tanggal_t1: "", status_t1: "",
+        tanggal_t2: "", status_t2: "",
+        tanggal_t3: "", status_t3: "",
+        tanggal_t4: "", status_t4: "",
+        tanggal_t5: "", status_t5: "",
+        tanggal_tl: "", status_tl: ""
+    };
+
+    if (!details) return result;
+
+    let arr = [];
+    try {
+        arr = Array.isArray(details) ? details : JSON.parse(details);
+    } catch (e) {
+        console.error("Error parsing ttDosesDetails:", e);
+        return result;
+    }
+
+    arr.forEach((dose, index) => {
+        let key = (index < 5) ? `t${index + 1}` : `tl`;
+
+        // format tanggal → dd-mm-yyyy (ID locale)
+        let formattedDate = "";
+        if (dose.date) {
+            const d = new Date(dose.date);
+            if (!isNaN(d)) {
+                formattedDate = d.toLocaleDateString("id-ID"); // contoh: 18/06/2025
+            }
+        }
+
+        result[`tanggal_${key}`] = formattedDate;
+        result[`status_${key}`] = dose.source || "";
+    });
+
+    return result;
+}
+
+// 🔑 fungsi utama
 window.downloadIndividualReportCsv = async function() {
     window.closeDownloadReportModal();
     window.showLoading();
@@ -2842,29 +2883,44 @@ window.downloadIndividualReportCsv = async function() {
             return;
         }
 
+        // 🔑 header CSV baru
         const headers = [
-            'uniqueId', 'nik', 'nama', 'desaKelurahan', 'alamat', 'noHp', 'tanggalLahir', 'umur', 
-            'tanggalLayanan', 'statusTt', 'jadwalDosisBerikutnya', 'ttDosesDetails', 'catatan', 'timestamp',
-  'userEmail' // 🔑 tambahan kolom email penginput
+            'uniqueId', 'nik', 'nama', 'desaKelurahan', 'alamat', 'noHp', 'tanggalLahir', 'umur',
+            'tanggalLayanan', 'statusTt', 'jadwalDosisBerikutnya',
+            'tanggal_t1', 'status_t1',
+            'tanggal_t2', 'status_t2',
+            'tanggal_t3', 'status_t3',
+            'tanggal_t4', 'status_t4',
+            'tanggal_t5', 'status_t5',
+            'tanggal_tl', 'status_tl',
+            'catatan', 'timestamp', 'userEmail'
         ];
         let csvContent = headers.map(window.sanitizeCsvField).join(',') + '\n';
 
+        // 🔑 buat baris per item
         dataToDownload.forEach(item => {
-            const rowData = headers.map(header => {
-                let value = item[header];
+            // pecah ttDosesDetails
+            const tt = parseTtDoses(item.ttDosesDetails);
 
-                if (header === 'ttDosesDetails' && value) {
-                    value = JSON.stringify(value);
+            const rowData = headers.map(header => {
+                let value = "";
+
+                if (header in item) {
+                    value = item[header];
+                } else if (header in tt) {
+                    value = tt[header];
                 }
 
-                // 🔑 Tambahan: kasih tanda ' untuk nik & noHp
+                // prefix ' untuk nik & noHp agar tidak auto-format di Excel
                 value = window.prefixExcelText(header, value);
 
                 return window.sanitizeCsvField(value);
             });
+
             csvContent += rowData.join(',') + '\n';
         });
 
+        // 🔑 buat blob CSV
         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
@@ -2882,7 +2938,7 @@ window.downloadIndividualReportCsv = async function() {
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
 
-        window.showCustomAlert('Laporan Individu berhasil diunduh!');
+        window.showCustomAlert('Laporan Individu berhasil diunduh!', null, null, true, "individu");
     } catch (error) {
         console.error(error);
         window.showCustomAlert(`Gagal mengunduh laporan. Error: ${error.message}`);
@@ -2890,6 +2946,7 @@ window.downloadIndividualReportCsv = async function() {
         window.hideLoading();
     }
 }
+
 
     window.showView = function(viewId, itemData = null) {
         console.log(`[showView] Called with viewId: ${viewId}`);
