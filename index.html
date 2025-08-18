@@ -456,26 +456,124 @@
 </head>
 <body class="bg-gray-100 text-gray-800">
 
-<!-- Fixed Top Bar (for font size control, logged-in user, and logout) -->
-<div id="topNavBar" class="fixed top-0 left-0 right-0 z-20 bg-blue-100 p-2 shadow-md flex items-center justify-between rounded-bl-lg rounded-br-lg">
-    <div class="flex items-center gap-1">
-        <button id="zoomOutBtn" class="font-control-btn" onclick="adjustFontSize(-1)">A-</button>
-        <button id="resetZoomBtn" class="font-control-btn" onclick="adjustFontSize(0)">A</button>
-        <button id="zoomInBtn" class="font-control-btn" onclick="adjustFontSize(1)">A+</button>
+<!-- Fixed Top Bar -->
+<div id="topNavBar" 
+     class="fixed top-0 left-0 right-0 z-20 bg-gradient-to-r from-blue-100 to-blue-200 
+            px-2 py-1 shadow-md flex items-center justify-between 
+            rounded-bl-xl rounded-br-xl text-xs">
+
+  <!-- Kiri: Logo + Judul -->
+  <div class="flex items-center gap-2">
+    <img 
+      src="https://upload.wikimedia.org/wikipedia/commons/thumb/b/b7/Official_Logo_of_Sidenreng_Rappang_Regency.png/1044px-Official_Logo_of_Sidenreng_Rappang_Regency.png"
+      alt="Logo Pemda Sidrap"
+      class="h-6 md:h-7"
+    >
+    <span class="font-bold text-blue-800 text-sm sm:text-base">siTTa</span>
+  </div>
+
+  <!-- Kanan: Network, User Info, Settings -->
+  <div class="flex items-center gap-2">
+    <!-- Network Status -->
+    <span id="networkStatusIndicator" class="hidden flex flex-col items-center text-gray-600">
+      <i class="fas"></i>
+      <span id="networkStatusText" class="text-[10px]"></span>
+    </span>
+
+    <!-- User Info -->
+    <div class="flex flex-col items-end leading-tight">
+      <span id="loggedInDesa" class="font-semibold text-gray-700"></span>
+      <span id="loggedInEmail" class="italic text-gray-500 text-[10px]"></span>
     </div>
 
-    <div class="flex items-center gap-2">
-        <button id="installBtn" class="text-sm font-semibold text-gray-700 mr-2">📥</button>
-        <!-- Network Status Indicator -->
-        <span id="networkStatusIndicator" class="hidden">
-            <i class="fas"></i>
-            <span id="networkStatusText"></span>
-        </span>
-        <span id="loggedInDesa" class="text-sm font-semibold text-gray-700 mr-2"></span>
-<span id="loggedInEmail" class="ml-1 text-xs italic text-gray-600"></span>        <button id="logoutBtn" class="px-3 py-1 bg-red-500 text-white rounded-md text-xs hover:bg-red-600 transition-colors">X</button>
-    </div>
+    <!-- Settings Menu -->
+    <div class="relative">
+      <button id="settingsBtn" 
+              class="px-2 py-1 bg-white border rounded hover:bg-gray-100">⚙️</button>
+      <!-- Dropdown -->
+      <div id="settingsDropdown" 
+           class="hidden absolute right-0 mt-2 w-44 bg-white border rounded shadow-md text-xs">
+
+ <!-- Label Font Size -->
+<div class="px-1 py-1 text-gray-600 text-[10px] font-semibold">Font Size</div>
+
+<!-- Font Size Controls (lebih besar) -->
+<div class="flex items-center gap-1 px-2 py-1">
+  <button id="zoomOutBtn" 
+          class="font-control-btn px-2 py-1 text-xs bg-gray-100 rounded hover:bg-gray-200" 
+          onclick="adjustFontSize(-1)">A-</button>
+  <button id="resetZoomBtn" 
+          class="font-control-btn px-2 py-1 text-xs bg-gray-100 rounded hover:bg-gray-200" 
+          onclick="adjustFontSize(0)">A</button>
+  <button id="zoomInBtn" 
+          class="font-control-btn px-2 py-1 text-xs bg-gray-100 rounded hover:bg-gray-200" 
+          onclick="adjustFontSize(1)">A+</button>
 </div>
+        <hr class="my-1">
 
+        <!-- Install PWA -->
+        <button id="installBtn" class="hidden block w-full px-2 py-1 hover:bg-gray-100 text-left">
+          📥 Install Aplikasi
+        </button>
+        <hr class="my-1">
+
+        <!-- Logout -->
+        <button id="logoutBtn" 
+                class="block w-full px-2 py-1 text-red-600 hover:bg-red-100 text-left">
+         [X]  Keluar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+  // Toggle dropdown Settings
+  document.getElementById("settingsBtn").addEventListener("click", function() {
+    document.getElementById("settingsDropdown").classList.toggle("hidden");
+  });
+
+  // Tutup dropdown kalau klik di luar
+  document.addEventListener("click", function(e) {
+    const dropdown = document.getElementById("settingsDropdown");
+    const btn = document.getElementById("settingsBtn");
+    if (!btn.contains(e.target) && !dropdown.contains(e.target)) {
+      dropdown.classList.add("hidden");
+    }
+  });
+
+  // Handle PWA Install
+  let deferredPrompt;
+  const installBtn = document.getElementById('installBtn');
+
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+    installBtn.classList.remove('hidden'); // tampilkan tombol install
+  });
+
+  installBtn.addEventListener('click', async () => {
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      deferredPrompt = null;
+      installBtn.classList.add('hidden');
+    }
+  });
+
+  // Pastikan desa & email tampil
+  window.addEventListener("DOMContentLoaded", () => {
+    const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
+    const savedEmail = localStorage.getItem('userEmail') || '';
+
+    if (isLoggedIn && currentUserDesa) {
+      const desaEl = document.getElementById("loggedInDesa");
+      if (desaEl) desaEl.innerText = currentUserDesa;
+
+      const emailEl = document.getElementById("loggedInEmail");
+      if (emailEl) emailEl.innerText = savedEmail;
+    }
+  });
+</script>
 <!-- Main Content Area -->
 <div class="main-container max-w-4xl w-full bg-white p-2 rounded-xl shadow-lg md:p-4 mx-auto my-0 flex-grow overflow-y-auto hidden" style="margin-top: 60px; margin-bottom: 90px;">
     <!-- Tampilan Daftar Data -->
